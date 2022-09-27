@@ -46,7 +46,7 @@ ballot(Name, Round, Proposal, Acceptors, PanelId) ->
       accept(Round, Proposal, Acceptors),
       case vote(Quorum, Round) of
         ok ->
-          {ok, Proposal};
+          {ok, Proposal}; % May need to change this to Round
         abort ->
           abort
       end;
@@ -59,18 +59,18 @@ collect(0, _, _, Proposal) ->
 collect(N, Round, MaxVoted, Proposal) ->
   receive 
     {promise, Round, _, na} ->
-      collect(..., ..., ..., ...);
+      collect(N-1, Round, order:null(), na);
     {promise, Round, Voted, Value} ->
-      case order:gr(..., ...) of
+      case order:gr(Round, Voted) of % ??
         true ->
-          collect(..., ..., ..., ...);
+          collect(N-1, Round, Voted, Value);
         false ->
-          collect(..., ..., ..., ...)
+          collect(N, Round, Voted, Value)
       end;
     {promise, _, _,  _} ->
       collect(N, Round, MaxVoted, Proposal);
     {sorry, {prepare, Round}} ->
-      collect(..., ..., ..., ...);
+      collect(N, Round, MaxVoted, Proposal); % ??
     {sorry, _} ->
       collect(N, Round, MaxVoted, Proposal)
   after ?timeout ->
@@ -82,11 +82,11 @@ vote(0, _) ->
 vote(N, Round) ->
   receive
     {vote, Round} ->
-      vote(N+1, Round);
+      vote(N-1, Round);
     {vote, _} ->
       vote(N, Round);
     {sorry, {accept, Round}} ->
-      vote(N-1, Round);
+      vote(N, Round); % ??
     {sorry, _} ->
       vote(N, Round)
   after ?timeout ->
