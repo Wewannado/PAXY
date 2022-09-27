@@ -13,7 +13,7 @@ init(Name, PanelId) ->
 acceptor(Name, Promised, Voted, Value, PanelId) ->
   receive
     {prepare, Proposer, Round} ->
-      case order:gr(Promised, Round) of
+      case order:gr(Round, Promised) of
         true ->
           Proposer ! {promise, Round, Voted, Value},               
       io:format("[Acceptor ~w] Phase 1: promised ~w voted ~w colour ~w~n",
@@ -28,10 +28,10 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
           acceptor(Name, Promised, Voted, Value, PanelId)
       end;
     {accept, Proposer, Round, Proposal} ->
-      case order:goe(Promised, Round) of
+      case order:goe(Round, Promised) of
         true ->
           Proposer ! {vote, Round},
-          case order:goe(Voted, Round) of
+          case order:goe(Round, Voted) of
             true ->
       io:format("[Acceptor ~w] Phase 2: promised ~w voted ~w colour ~w~n",
                  [Name, Promised, Round, Proposal]),
