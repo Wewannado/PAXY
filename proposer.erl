@@ -82,11 +82,11 @@ vote(0, _) ->
 vote(N, Round) ->
   receive
     {vote, Round} ->
-      vote(..., ...);
+      vote(N+1, Round);
     {vote, _} ->
       vote(N, Round);
     {sorry, {accept, Round}} ->
-      vote(..., ...);
+      vote(N-1, Round);
     {sorry, _} ->
       vote(N, Round)
   after ?timeout ->
