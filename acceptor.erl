@@ -1,6 +1,8 @@
 -module(acceptor).
 -export([start/2]).
 
+-define(delay, 200).
+
 start(Name, PanelId) ->
   spawn(fun() -> init(Name, PanelId) end).
         
@@ -15,7 +17,9 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
     {prepare, Proposer, Round} ->
       case order:gr(Round, Promised) of
         true ->
-          Proposer ! {promise, Round, Voted, Value},               
+		  T = rand:uniform(?delay),
+		  timer:send_after(T, Proposer, {promise, Round, Voted, Value}),
+          % Proposer ! {promise, Round, Voted, Value},               
       io:format("[Acceptor ~w] Phase 1: promised ~w voted ~w colour ~w~n",
                  [Name, Round, Voted, Value]),
           % Update gui
@@ -24,13 +28,15 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
                      "Promised: " ++ io_lib:format("~p", [Round]), Colour},
           acceptor(Name, Round, Voted, Value, PanelId);
         false ->
-          Proposer ! {sorry, {prepare, Round}},
+          % Proposer ! {sorry, {prepare, Round}},
           acceptor(Name, Promised, Voted, Value, PanelId)
       end;
     {accept, Proposer, Round, Proposal} ->
       case order:goe(Round, Promised) of
         true ->
-          Proposer ! {vote, Round},
+		  T = rand:uniform(?delay),
+		  timer:send_after(T, Proposer, {vote, Round}),
+          % Proposer ! {vote, Round},
           case order:goe(Round, Voted) of
             true ->
       io:format("[Acceptor ~w] Phase 2: promised ~w voted ~w colour ~w~n",
@@ -43,7 +49,7 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
               acceptor(Name, Promised, Voted, Value, PanelId)
           end;                            
         false ->
-          Proposer ! {sorry, {accept, Round}},
+          % Proposer ! {sorry, {accept, Round}},
           acceptor(Name, Promised, Voted, Value, PanelId)
       end;
     stop ->
