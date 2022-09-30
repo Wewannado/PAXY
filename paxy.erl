@@ -4,15 +4,17 @@
 -define(RED, {255,0,0}).
 -define(BLUE, {0,0,255}).
 -define(GREEN, {0,255,0}).
+-define(COL1, {59,222,12}).
+-define(COL2, {123,22,122}).
 
 % Sleep is a list with the initial sleep time for each proposer
 start(Sleep) ->
   AcceptorNames = ["Acceptor a", "Acceptor b", "Acceptor c", "Acceptor d", 
-                   "Acceptor e"],
-  AccRegister = [a, b, c, d, e],
+                   "Acceptor e", "Acceptor f", "Acceptor g", "Acceptor h"],
+  AccRegister = [a, b, c, d, e, f, g, h],
   ProposerNames = [{"Proposer kurtz", ?RED}, {"Proposer kilgore", ?GREEN}, 
-                   {"Proposer willard", ?BLUE}],
-  PropInfo = [{kurtz, ?RED}, {kilgore, ?GREEN}, {willard, ?BLUE}],
+                   {"Proposer willard", ?BLUE}, {"Proposer pr1", ?COL1}, {"Proposer pr2", ?COL2}],
+  PropInfo = [{kurtz, ?RED}, {kilgore, ?GREEN}, {willard, ?BLUE}, {pr1, ?COL1}, {pr2, ?COL2}],
   register(gui, spawn(fun() -> gui:start(AcceptorNames, ProposerNames) end)),
   gui ! {reqState, self()},
   receive
@@ -64,6 +66,9 @@ stop() ->
   stop(c),
   stop(d),
   stop(e),
+  stop(f),
+  stop(g),
+  stop(h),
   stop(gui).
 
 stop(Name) ->
