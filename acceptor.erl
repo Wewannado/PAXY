@@ -36,7 +36,7 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
       io:format("[Acceptor ~w] Phase 2: promised ~w voted ~w colour ~w~n",
                  [Name, Promised, Round, Proposal]),
               % Update gui
-              PanelId ! {updateAcc, "Voted: " ++ io_lib:format("~p", [Round]), 
+              PanelId ! {updateAcc, "Voted: " ++ io_lib:format("~p", [Voted]), 
                          "Promised: " ++ io_lib:format("~p", [Promised]), Proposal},
               acceptor(Name, Promised, Round, Proposal, PanelId);
             false ->

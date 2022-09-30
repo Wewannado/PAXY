@@ -29,7 +29,7 @@ round(Name, Backoff, Round, Proposal, Acceptors, PanelId) ->
       {Value, Round};
     abort ->
       timer:sleep(rand:uniform(Backoff)),
-      Next = order:inc({Round, Name}),
+      Next = order:inc(Round),
       round(Name, (2*Backoff), Next, Proposal, Acceptors, PanelId)
   end.
 
@@ -43,10 +43,10 @@ ballot(Name, Round, Proposal, Acceptors, PanelId) ->
                  [Name, Round, Value, Proposal]),
       % update gui
       PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Value},
-      accept(Round, Proposal, Acceptors),
+      accept(Round, Value, Acceptors),
       case vote(Quorum, Round) of
         ok ->
-          {ok, Proposal}; % May need to change this to Round
+          {ok, Value}; % May need to change this to Round
         abort ->
           abort
       end;
@@ -59,7 +59,7 @@ collect(0, _, _, Proposal) ->
 collect(N, Round, MaxVoted, Proposal) ->
   receive 
     {promise, Round, _, na} ->
-      collect(N-1, Round, order:null(), na);
+      collect(N-1, Round, MaxVoted, Proposal);
     {promise, Round, Voted, Value} ->
       case order:gr(Round, Voted) of % ??
         true ->
