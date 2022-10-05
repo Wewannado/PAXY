@@ -76,8 +76,7 @@ stop() ->
   stop(c),
   stop(d),
   stop(e),
-  stop(proposers_gui),
-  stop(acceptors_gui).
+  stop(gui).
 
 stop(Name) ->
   case whereis(Name) of
