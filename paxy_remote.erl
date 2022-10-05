@@ -1,32 +1,44 @@
--module(paxy-remote).
--export([start/1, stop/0, stop/1]).
+-module(paxy_remote).
+-export([start/3, stop/0, stop/1]).
 
 -define(RED, {255,0,0}).
 -define(BLUE, {0,0,255}).
 -define(GREEN, {0,255,0}).
 
 % Sleep is a list with the initial sleep time for each proposer
-start(Sleep) ->
+start(Sleep, AcceptorsNode, ProposersNode) ->
+  spawn(AcceptorsNode, fun() -> init_remote_acceptors() end),
+  spawn(ProposersNode, fun() -> init_remote_proposers(Sleep, AcceptorsNode) end).
+  
+  
+init_remote_proposers(Sleep, AcceptorsNode) ->
+  ProposerNames = [{"Proposer kurtz", ?RED}, {"Proposer kilgore", ?GREEN}, 
+                   {"Proposer willard", ?BLUE}],
+  PropInfo = [{kurtz, ?RED}, {kilgore, ?GREEN}, {willard, ?BLUE}],
+  AcceptorNames = ["Acceptor a", "Acceptor b", "Acceptor c", "Acceptor d", 
+                   "Acceptor e"],
+  AccRegister = [{a, AcceptorsNode}, {b, AcceptorsNode}, {c, AcceptorsNode}, {d, AcceptorsNode}, {e, AcceptorsNode}],
+  %register(gui, spawn(fun() -> gui:start(AcceptorNames, ProposerNames) end)),
+  {gui, AcceptorsNode} ! {reqState, self()},
+  receive
+	{reqState, State} ->
+		{_, PropIds} = State,
+		start_proposers(PropIds, PropInfo, AccRegister, Sleep, self()),
+		wait_proposers(length(PropIds))
+  end.
+  
+init_remote_acceptors() ->
   AcceptorNames = ["Acceptor a", "Acceptor b", "Acceptor c", "Acceptor d", 
                    "Acceptor e"],
   AccRegister = [a, b, c, d, e],
   ProposerNames = [{"Proposer kurtz", ?RED}, {"Proposer kilgore", ?GREEN}, 
                    {"Proposer willard", ?BLUE}],
-  PropInfo = [{kurtz, ?RED}, {kilgore, ?GREEN}, {willard, ?BLUE}],
   register(gui, spawn(fun() -> gui:start(AcceptorNames, ProposerNames) end)),
   gui ! {reqState, self()},
   receive
-    {reqState, State} ->
-      {AccIds, PropIds} = State,
-      start_acceptors(AccIds, AccRegister),
-      spawn(fun() -> 
-        Begin = erlang:monotonic_time(),
-        start_proposers(PropIds, PropInfo, AccRegister, Sleep, self()),
-        wait_proposers(length(PropIds)),
-        End = erlang:monotonic_time(),
-        Elapsed = erlang:convert_time_unit(End-Begin, native, millisecond),
-        io:format("[Paxy-acc] Total elapsed time: ~w ms~n", [Elapsed])
-      end)
+	{reqState, State} ->
+		{AccIds, _} = State,
+		start_acceptors(AccIds, AccRegister)
   end.
     
 start_acceptors(AccIds, AccReg) ->
@@ -64,7 +76,8 @@ stop() ->
   stop(c),
   stop(d),
   stop(e),
-  stop(gui).
+  stop(proposers_gui),
+  stop(acceptors_gui).
 
 stop(Name) ->
   case whereis(Name) of
