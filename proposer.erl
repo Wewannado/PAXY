@@ -51,6 +51,7 @@ ballot(Name, Round, Proposal, Acceptors, PanelId) ->
           abort
       end;
     abort ->
+	io:format("~w timeout~n",[Name]),
       abort
   end.
 
@@ -106,4 +107,13 @@ accept(Round, Proposal, Acceptors) ->
   lists:foreach(Fun, Acceptors).
 
 send(Name, Message) ->
-  Name ! Message.
+	if is_tuple(Name) -> %remote
+		Name ! Message;
+	true -> %local
+		case whereis(Name) of
+		undefined ->
+			down;
+		Pid ->
+			Pid ! Message
+		end
+end.

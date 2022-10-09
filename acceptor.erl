@@ -7,10 +7,18 @@ start(Name, PanelId) ->
   spawn(fun() -> init(Name, PanelId) end).
         
 init(Name, PanelId) ->
-  Promised = order:null(), 
-  Voted = order:null(),
-  Value = na,
-  acceptor(Name, Promised, Voted, Value, PanelId).
+  pers:open(Name),
+  {Promised, Voted, Accepted, StoredPanelId} = pers:read(Name),
+  %restore panelID if we came from a crash
+  if PanelId == na ->
+	%we're recovering from a crash
+	io:format("Acceptor ~w recovering from crash~n attaching to panelID ~w",[Name,StoredPanelId]),
+	acceptor(Name, Promised, Voted, Accepted, StoredPanelId);
+  true ->
+    io:format("Initializing acceptor ~w for first time and saving state~n",[Name]),
+	pers:store(Name, Promised, Voted, Accepted, PanelId),
+	acceptor(Name, Promised, Voted, Accepted, PanelId)
+  end.
 
 acceptor(Name, Promised, Voted, Value, PanelId) ->
   receive
@@ -21,6 +29,8 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
 			%if P =< ?drop ->
 			%	io:format("message dropped");	
 			%true ->
+			%State modified. Save it before notifying destination.
+			pers:store(Name, Round, Voted, Value, PanelId),
 			Proposer ! {promise, Round, Voted, Value},
       io:format("[Acceptor ~w] Phase 1: promised ~w voted ~w colour ~w~n",
                  [Name, Round, Voted, Value]),
@@ -40,6 +50,8 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
 			%if P =< ?drop ->
 			%	io:format("message dropped");	
 			%true ->
+			%State modified. Save it before notifying destination.
+			pers:store(Name, Promised, Round, Proposal, PanelId),
 			Proposer ! {vote, Round},
           case order:goe(Round, Voted) of
             true ->
@@ -57,6 +69,9 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
           acceptor(Name, Promised, Voted, Value, PanelId)
       end;
     stop ->
+	pers:close(Name),
+	pers:delete(Name),
       PanelId ! stop,
+	  io:format("Clossing acceptor ~w ~n",[Name]),
       ok
   end.

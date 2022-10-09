@@ -48,6 +48,7 @@ start_acceptors(AccIds, AccReg) ->
     [AccId|Rest] ->
       [RegName|RegNameRest] = AccReg,
       register(RegName, acceptor:start(RegName, AccId)),
+	  io:format("Registered an acceptor with name ~w and id ~w ~n",[RegName,AccId]),
       start_acceptors(Rest, RegNameRest)
   end.
 
@@ -81,6 +82,7 @@ stop() ->
 stop(Name) ->
   case whereis(Name) of
     undefined ->
+	  {Name,'paxy-acc@127.0.0.1'} ! stop,
       ok;
     Pid ->
       Pid ! stop
